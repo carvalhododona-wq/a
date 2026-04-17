@@ -1,0 +1,164 @@
+# Pseudocódigo Oficial — Motor AURI-UCC
+
+## Visão Geral
+
+O Motor AURI-UCC é uma arquitetura estrutural-dinâmica para detecção e antecipação de transições de regime em sistemas não estacionários.
+
+Seu funcionamento se baseia em:
+
+- estados discretos persistentes
+- ordenação relativa em ranking
+- derivadas estruturais de posição
+- distância estrutural (`ΔS`)
+- curvatura (`Φ`)
+- número estrutural (`Re-GIQ`)
+- limiar de convergência de regime (`LCR`)
+- classificação de estados `Z0`, `ZI` e `FZ`
+
+---
+
+## Arquitetura Geral
+
+O sistema é composto por:
+
+1. **Agentes Regionais**
+   - recebem dados brutos
+   - executam camadas internas
+   - calculam métricas locais
+
+2. **Núcleo Central (AAS)**
+   - sincroniza estados
+   - agrega informação global
+   - consolida leituras regionais
+
+3. **Camada Contextual Global**
+   - aplica posicionamento global (`RRX`)
+   - interpreta regimes
+   - produz a decisão final
+
+---
+
+## Representação de Estado
+
+Cada entidade `i` no tempo `t` é representada por:
+
+```text
+E_i(t) = (A_i(t), I_i(t), D_i(t))
+
+A_i(t) = 1 se x_i(t) > 0, senão 0
+I_i(t) = x_i(t) - μ_i(t)
+D_i(t) = sinal(x_i(t) - x_i(t-1))
+
+se A_i(t) == A_i(t-1):
+    τ_i(t) = τ_i(t-1) + 1
+senão:
+    τ_i(t) = 1
+
+    P_i(t) = min( τ_i(t) / W , θ_s )
+
+    M_i(t) = soma(A_i(k), para k = 1 até t) * (1 + P_i(t))
+
+π_i(t) = posição da entidade i no ranking no instante t
+
+Δπ_i(t) = π_i(t-1) - π_i(t)
+
+Δ²π_i(t) = Δπ_i(t) - Δπ_i(t-1)
+
+ΔS_i(t) =
+    w_A * |ΔA_i|
+  + w_R * |Δπ_i|
+  + w_M * |ΔM_i|
+  + w_L * |ΔL_i|
+  + w_C * |Φ_i|
+
+Φ_i(t) =
+    α * média_recente(ΔS_i)
+  + β * P_i(t)
+  + γ * L_i(t)
+  + δ * Q_i(t)
+
+Q_i(t) = |Δπ_i| + 0.5 * |Δ²π_i|
+
+Re_GIQ(i,t) = ( |Δπ_i(t)| + ΔS_i(t) ) / ( P_i(t) + ε )
+
+LCR_i(t) = função_de_convergência( M_i(t), Φ_i(t), P_i(t), ΔS_i(t) )
+
+Score_i(t) =
+    0.33 * M_i(t)
+  + 0.17 * ΔS_i(t)
+  + 0.25 * Φ_i(t)
+  + 0.25 * P_i(t)
+
+INICIAR Motor_AURI_UCC
+
+CARREGAR configuração global
+INICIALIZAR agentes regionais
+INICIALIZAR núcleo central AAS
+INICIALIZAR camada contextual global
+
+PARA cada instante t:
+    
+    # 1. Ingestão
+    RECEBER dados brutos de entrada
+    
+    # 2. Estado discreto
+    PARA cada entidade i:
+        CALCULAR A_i(t)
+        CALCULAR I_i(t)
+        CALCULAR D_i(t)
+        DEFINIR E_i(t) = (A_i(t), I_i(t), D_i(t))
+    
+    # 3. Memória / persistência
+    PARA cada entidade i:
+        ATUALIZAR τ_i(t)
+        CALCULAR P_i(t)
+        ATUALIZAR M_i(t)
+    
+    # 4. Fluxo
+    REGISTRAR evolução temporal das entidades
+    
+    # 5. Ordenação-base
+    GERAR ranking estrutural
+    ATRIBUIR posição π_i(t) para cada entidade
+    
+    # 6. Derivadas
+    PARA cada entidade i:
+        CALCULAR Δπ_i(t)
+        CALCULAR Δ²π_i(t)
+    
+    # 7. Classificação final local
+    PARA cada entidade i:
+        CALCULAR ΔS_i(t)
+        CALCULAR Φ_i(t)
+        CALCULAR Re_GIQ(i,t)
+        CALCULAR LCR_i(t)
+        CALCULAR Score_i(t)
+    
+    # 8. Filtros estruturais
+    APLICAR filtros para remover ruído e flutuações fracas
+    
+    # 9. Classificação de regime
+    PARA cada entidade i:
+        SE massa baixa E curvatura baixa:
+            regime_i = Z0
+        SENÃO SE massa crescente E curvatura emergente:
+            regime_i = ZI
+        SENÃO SE massa alta E curvatura estável:
+            regime_i = FZ
+    
+    # 10. Contexto global
+    AGREGAR resultados regionais no núcleo central
+    ATUALIZAR leitura global
+    APLICAR posicionamento contextual RRX
+    
+    # 11. Decisão
+    GERAR saída final forward
+    REGISTRAR decisão estrutural do sistema
+
+ENCERRAR
+
+persistência gera massa
+massa gera curvatura
+curvatura reorganiza o sistema
+reorganização aproxima a transição
+transição muda o regime   
